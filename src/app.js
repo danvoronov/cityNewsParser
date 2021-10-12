@@ -22,7 +22,7 @@ const base = Airtable.base(process.env.AIRTABLE_BASE);
 // ====================================================================
 const cheerio = require('cheerio')
 const fetch = require('node-fetch');
-const sendToBot = require('./telegram_api');
+const {sendLink, sendWoLink, getTgJson} = require('./telegram_api');
 
 const toTelegram = async (el)=>{ if (el.score<=0) return    
     try{ 
@@ -31,8 +31,9 @@ const toTelegram = async (el)=>{ if (el.score<=0) return
     } catch (err){ newsUrl = el.link }
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'🟢':(el.score<=13?'🟢🟢':'🟢🟢🟢')))
-    await sendToBot(`${indicator}   ${el.time}    [👉 ПЕРЕЙТИ](${newsUrl})`)
+    await sendLink(`${indicator}   ${el.time}    <a href="${newsUrl}">👉 ПЕРЕЙТИ</a>`)
 }
+
 // ====================================================================
 
 const toDB = async (el)=>{
@@ -47,10 +48,34 @@ const toDB = async (el)=>{
             delete el.image
             delete el.subtitle
 
-            base(sCity).create(el, function (err, records) { if (err) console.error(err, el);}) 
+            base(sCity).create(el, function (err) { if (err) console.error(err, el);}) 
         }
 
+const UVAGA = `<div class=\"tgme_widget_message_text js-message_text\" dir=\"auto\"><b><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>Увага<i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>`;
+
+const info_chanel = 'kyivpasstrans';
+
 (async()=>{
+
+    const {items}=await getTgJson(info_chanel)
+    if (items){
+        const flt = items.filter(fl=>fl.title.startsWith('‼️Увага‼️'))
+        console.log(`С @${info_chanel} новостей = `+flt.length)
+
+        let stop_urls = []; // см в базе что уже постили
+        if (flt.length>0) base(info_chanel).select({maxRecords: 20}).eachPage(function page(records, fetchNextPage) { records.forEach(({fields})=>stop_urls.push(fields.postURL)); fetchNextPage() }, async function done(err) { if (err) return console.log(err) 
+
+            for (var i = 0; i < flt.length; i++) {
+                if (stop_urls.includes(flt[i].url)) continue // если уже запостили
+                let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "").replace('<br/>Перепрошуємо за незручності.', "").replace('<br/><br/>Перепрошуємо', "").replace(' за  тимчасові  незручності', "").replace(/<br\/>/g, "\n")
+                sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
+                base(info_chanel).create({"postURL":flt[i].url}, function (err) { if (err) console.error(err, el);}) 
+            }  
+
+        })
+    }
+
+
     try{   
         var news = await googleNewsScraper({ timeframe,
             searchTerm: encodeURIComponent(sCity+" "+sExclude), prettyURLs: false,
