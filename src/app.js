@@ -1,5 +1,6 @@
-const {StemsWght, StopSrc, sCity, sExclude, hl, gl, ceid, timeframe, maxPost} = require('./filter_params');
+const {StopSrc, sCity, sExclude, hl, gl, ceid, timeframe, maxPost} = require('./filter_params');
 
+let StemsWght = {}
 StemsWght[sCity] = 1 // поднимем если в заголовке есть город
 console.log(sCity.toUpperCase())
 // ====================================================================
@@ -24,14 +25,16 @@ const cheerio = require('cheerio')
 const fetch = require('node-fetch');
 const {sendLink, sendWoLink, getTgJson} = require('./telegram_api');
 
-const toTelegram = async (el)=>{ if (el.score<=0) return    
+const toTelegram = async (el)=>{ 
+    if (el.score<=0 || el.title =='' || el.link =='') return    
     try{ 
         const getURL = cheerio.load(await fetch(el.link).then(res => res.text()))
         newsUrl = getURL('c-wiz a[rel=nofollow]').attr('href')
-    } catch (err){ newsUrl = el.link }
+    } catch (err){ newsUrl = el.link } // если не можем заресолвить полную
 
-    let indicator = (el.score<=3?'🟡':(el.score<=7?'🟢':(el.score<=13?'🟢🟢':'🟢🟢🟢')))
-    await sendLink(`${indicator}   ${el.time}    <a href="${newsUrl}">👉 ПЕРЕЙТИ</a>`)
+    let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
+    await sendLink(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
+    console.log(`✅ to TG ${el.title}`)
 }
 
 // ====================================================================
@@ -75,6 +78,7 @@ const info_chanel = 'kyivpasstrans';
         })
     }
 
+/// == забераем новости с гугла
 
     try{   
         var news = await googleNewsScraper({ timeframe,
@@ -88,17 +92,23 @@ const info_chanel = 'kyivpasstrans';
     } catch (err){ return console.log('Парсер ОШИБКА! '+err); }
     
     console.log('С API статей = '+news.length)
-    
+    if (news.length===0) return
+
+    console.log("[airtable] Запрашиваем StemsWght") 
+    base('StemsWght').select().eachPage(function page(r, fetchNextPage) { r.forEach(({fields})=>StemsWght[fields.Stem]=fields.Weight); fetchNextPage() }, async function done(err) { if (err) return console.log(err)
+
     let data = [];
     base(sCity).select({maxRecords: 300}).eachPage(function page(records, fetchNextPage) { records.forEach(({fields})=>data.push(fields)); fetchNextPage() }, async function done(err) { if (err) return console.log(err) 
   
         let filtred = news.filter(fl=> data.findIndex(art => (art.title===fl.title) && (art.source===fl.source))<0 && !StopSrc.includes(fl.source) && (fl.time == 'Вчера' || fl.time.includes('назад'))  )
 
-        console.log('Осталось = '+filtred.length)
+        console.log('[airtable dub] Осталось = '+filtred.length)
 
         for (var i = 0; i < filtred.length; i++) await toDB(filtred[i])
 
         filtred.sort((a, b) => b.score-a.score).slice(0,maxPost).forEach(toTelegram)
 
     }); 
+  })
+
 })()
