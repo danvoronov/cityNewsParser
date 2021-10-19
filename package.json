@@ -1,18 +1,19 @@
-{  
-  "name": "kyivnews-filter",
-  "version": "1.0.1",
-  "description": "Получает новости от гугла, проверяет на чернуху",
-  "scripts": {
-    "start": "node src/app.js",
-    "loc": "node -r dotenv/config src/app.js"
-  },
-  "author": "Dan Voronov",
-  "dependencies": {
-    "airtable": "^0.11.1",
-    "dotenv": "^10.0.0",
-    "google-news-scraper": "^1.0.7",
-    "got": "^11.8.2",
-    "natural": "^5.1.1",
-    "node-nlp": "^4.22.1"
-  }
+{
+    "name": "kyivnews-filter",
+    "version": "1.2.1",
+    "description": "Получает новости от гугла, проверяет на чернуху",
+    "scripts": {
+        "start": "node src/app.js",
+        "loc": "node -r dotenv/config src/app.js"
+    },
+    "author": "Dan Voronov",
+    "dependencies": {
+        "airtable-plus": "^1.0.4",
+        "dotenv": "^10.0.0",
+        "google-news-scraper": "^1.0.7",
+        "got": "^11.8.2",
+        "natural": "^5.1.1",
+        "node-nlp": "^4.22.1",
+        "wuzzy": "^0.1.8"
+    }
 }

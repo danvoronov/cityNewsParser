@@ -1,25 +1,37 @@
-const {StopSrc, sCity, sExclude, hl, gl, ceid, timeframe, maxPost} = require('./filter_params');
+const {StopSrc, sCity, sExclude, hl, gl, timeframe, maxPost} = require('./filter_params');
+const MAX_OLD_NEWS = 300 
+const FL_POROG = .65
 
 let StemsWght = {}
+let StemsID = {}
+
 StemsWght[sCity] = 1 // поднимем если в заголовке есть город
 console.log(sCity.toUpperCase())
 // ====================================================================
 // https://devcenter.heroku.com/articles/scheduler
 // https://www.npmjs.com/package/google-news-scraper
 // ====================================================================
+const info_chanel = 'kyivpasstrans';
+
+const airauth = {baseID: process.env.AIRTABLE_BASE,
+    apiKey: process.env.AIRTABLE_KEY}
+
+const AirtablePlus = require('airtable-plus');
+const tgChnl = new AirtablePlus({ ...airauth, tableName: info_chanel,
+    transform: ({fields})=>fields.postURL // делаем из этого список урл
+});
+const cityData = new AirtablePlus({  ...airauth, tableName: sCity,
+    transform: ({fields})=>fields.title // делаем из этого архив заголовков
+});
+const stemsData = new AirtablePlus({  ...airauth, tableName: 'StemsWght',
+    transform: ({id,fields})=>{StemsWght[fields.Stem]=fields.Weight; StemsID[fields.Stem]=id}
+});
 
 const googleNewsScraper = require('google-news-scraper');
 const { SentimentManager } = require('node-nlp');
 const sentiment = new SentimentManager();
 let natural = require('natural'); 
-
-const Airtable = require('airtable');
-Airtable.configure({
-    endpointUrl: 'https://api.airtable.com',
-    apiKey: process.env.AIRTABLE_KEY
-});
-const base = Airtable.base(process.env.AIRTABLE_BASE);
-
+const wuzzy = require('wuzzy')
 // ====================================================================
 const cheerio = require('cheerio')
 const fetch = require('node-fetch');
@@ -43,7 +55,12 @@ const toDB = async (el)=>{
             let {score} = await sentiment.process('ru', el.title)
 
             let stems = natural.PorterStemmerRu.tokenizeAndStem(el.title)
-            score += stems.reduce((acc,wrd)=>acc+(StemsWght[wrd]?StemsWght[wrd]:0),0);
+
+            el.stmlink=[] 
+            score += stems.reduce((acc,wrd)=>{
+                if(StemsID[wrd]) el.stmlink.push(StemsID[wrd])
+                return acc+(StemsWght[wrd]?StemsWght[wrd]:0)
+            },0);
             el.score = score
             el.stems = stems.join(' ')
 
@@ -51,64 +68,73 @@ const toDB = async (el)=>{
             delete el.image
             delete el.subtitle
 
-            base(sCity).create(el, function (err) { if (err) console.error(err, el);}) 
+            await cityData.create(el);
+
+            // проритет близости к сейчс
+            el.fresh = (el.time.includes('минут')?3:(el.time.includes('час')?2:(el.time.includes('дней')?0:1)))            
         }
 
 const UVAGA = `<div class=\"tgme_widget_message_text js-message_text\" dir=\"auto\"><b><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>Увага<i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>`;
 
-const info_chanel = 'kyivpasstrans';
 
-(async()=>{
+async function getTGugaga(){
 
     const {items}=await getTgJson(info_chanel)
-    if (items){
-        const flt = items.filter(fl=>fl.title.startsWith('‼️Увага‼️'))
-        console.log(`С @${info_chanel} новостей = `+flt.length)
+    if (!items) return
 
-        let stop_urls = []; // см в базе что уже постили
-        if (flt.length>0) base(info_chanel).select({maxRecords: 20}).eachPage(function page(records, fetchNextPage) { records.forEach(({fields})=>stop_urls.push(fields.postURL)); fetchNextPage() }, async function done(err) { if (err) return console.log(err) 
+    const flt = items.filter(fl=>fl.title.startsWith('‼️Увага‼️'))
+    console.log(`С @${info_chanel} новостей = `+flt.length)
+    if (flt.length==0) return
 
-            for (var i = 0; i < flt.length; i++) {
-                if (stop_urls.includes(flt[i].url)) continue // если уже запостили
-                let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "").replace('<br/>Перепрошуємо за незручності.', "").replace('<br/><br/>Перепрошуємо', "").replace(' за  тимчасові  незручності', "").replace(/<br\/>/g, "\n")
-                sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
-                base(info_chanel).create({"postURL":flt[i].url}, function (err) { if (err) console.error(err, el);}) 
-            }  
+    try{   var stop_urls = await tgChnl.read({ 
+        maxRecords: 10,  sort: [{field: 'Created', direction: 'desc'}]
+    }) } catch (err){ return console.log('бд тг паблика ОШИБКА! '+err); }  
 
-        })
-    }
+    for (var i = 0; i < flt.length; i++) {
+        if (stop_urls.includes(flt[i].url)) continue // если уже запостили
+        let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "").replace('<br/>Перепрошуємо за незручності.', "").replace('<br/><br/>Перепрошуємо', "").replace(' за  тимчасові  незручності', "").replace(/<br\/>/g, "\n")
+        
+        sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
+        try{ await tgChnl.create({"postURL":flt[i].url});
+        } catch (err){ return console.log('бд тг запись ОШИБКА! '+err); }
+    }  
+}
 
-/// == забераем новости с гугла
-
-    try{   
+(async()=>{  getTGugaga()      
+    try{   /// == забераем новости с гугла   
         var news = await googleNewsScraper({ timeframe,
             searchTerm: encodeURIComponent(sCity+" "+sExclude), prettyURLs: false,
-            queryVars: { hl, gl, ceid },
+            queryVars: { hl, gl}, // hl:"ru-RU" == язык // gl:"UA", === локация
             puppeteerArgs: [ '--no-sandbox', '--disable-setuid-sandbox'] // need to pass flags 4 Heroku
         })
-        // hl:"ru-RU", // язык
-        // gl:"UA", // локация
-        // ceid:"UA:ru" // говорят страна и язык
-    } catch (err){ return console.log('Парсер ОШИБКА! '+err); }
-    
-    console.log('С API статей = '+news.length)
+    } catch (err){ return console.log('Пюпитр ОШИБКА! '+err); }    
+      
+    news = news.filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes('могу') && !fl.title.startsWith('Диван подождет') && (fl.time=='Вчера'||fl.time.includes('назад'))).filter(fl=>!fl.time.endsWith('дней назад') || fl.time.startsWith('5'))
+    console.log('С API новостей = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
 
-    console.log("[airtable] Запрашиваем StemsWght") 
-    base('StemsWght').select().eachPage(function page(r, fetchNextPage) { r.forEach(({fields})=>StemsWght[fields.Stem]=fields.Weight); fetchNextPage() }, async function done(err) { if (err) return console.log(err)
+    try{   
+        var oldNS = await cityData.read({ maxRecords: MAX_OLD_NEWS,
+            fields: ['title'], filterByFormula: 'score>0',
+            sort: [{field: 'Created', direction: 'desc'}]
+        })
+    } catch (err){ return console.log('Доступ к старым заголовкам ОШИБКА! '+err); }   
 
-    let data = [];
-    base(sCity).select({maxRecords: 300}).eachPage(function page(records, fetchNextPage) { records.forEach(({fields})=>data.push(fields)); fetchNextPage() }, async function done(err) { if (err) return console.log(err) 
-  
-        let filtred = news.filter(fl=> data.findIndex(art => (art.title===fl.title) && (art.source===fl.source))<0 && !StopSrc.includes(fl.source) && (fl.time == 'Вчера' || fl.time.includes('назад'))  )
+    let filtred = news.filter(e=>{        
+        for (var i = 0; i < oldNS.length; i++) if(wuzzy.levenshtein(oldNS[i], e.title)>FL_POROG) return false
+        return true  
+    })
+    console.log('[airtable dub] Осталось = '+filtred.length)
+    if (filtred.length===0) return
+ 
+    try{ await stemsData.read(); 
+    } catch (err){ return console.log('Доступ к стемам ОШИБКА! '+err); }     
 
-        console.log('[airtable dub] Осталось = '+filtred.length)
+    for (var i = 0; i < filtred.length; i++) await toDB(filtred[i])
+    
+    let pozitiv = filtred.filter(e=>e.score>0)
+    console.log('[pozitiv] Осталось = '+pozitiv.length)
 
-        for (var i = 0; i < filtred.length; i++) await toDB(filtred[i])
-
-        filtred.sort((a, b) => b.score-a.score).slice(0,maxPost).forEach(toTelegram)
-
-    }); 
-  })
+    pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(toTelegram)
 
 })()
