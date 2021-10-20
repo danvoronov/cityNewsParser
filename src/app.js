@@ -35,6 +35,8 @@ const wuzzy = require('wuzzy')
 // ====================================================================
 const cheerio = require('cheerio')
 const fetch = require('node-fetch');
+const urlExist = require("url-exist"); 
+
 const {sendLink, sendWoLink, getTgJson} = require('./telegram_api');
 
 const toTelegram = async (el)=>{ 
@@ -43,6 +45,9 @@ const toTelegram = async (el)=>{
         const getURL = cheerio.load(await fetch(el.link).then(res => res.text()))
         newsUrl = getURL('c-wiz a[rel=nofollow]').attr('href')
     } catch (err){ newsUrl = el.link } // если не можем заресолвить полную
+
+    let not404 = await urlExist(newsUrl)
+    if (!not404) return console.log(`❌ 404 on ${newsUrl}`)
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
     await sendLink(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
@@ -109,7 +114,7 @@ async function getTGugaga(){
         })
     } catch (err){ return console.log('Пюпитр ОШИБКА! '+err); }    
       
-    news = news.filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes('могу') && !fl.title.startsWith('Диван подождет') && (fl.time=='Вчера'||fl.time.includes('назад'))).filter(fl=>!fl.time.endsWith('дней назад') || fl.time.startsWith('5'))
+    news = news.filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет') && (fl.time=='Вчера'||fl.time.includes('назад'))).filter(fl=>!fl.time.endsWith('дней назад') || fl.time.startsWith('5'))
     console.log('С API новостей = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
 
