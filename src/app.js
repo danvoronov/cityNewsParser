@@ -1,6 +1,7 @@
 const {StopSrc, sCity, sExclude, hl, gl, timeframe, maxPost} = require('./filter_params');
-const MAX_OLD_NEWS = 300 
+const MAX_OLD_NEWS = 500 
 const FL_POROG = .65
+const TIME_POROG = 1000*60*60*4
 
 let StemsWght = {}
 let StemsID = {}
@@ -11,19 +12,17 @@ console.log(sCity.toUpperCase())
 // https://devcenter.heroku.com/articles/scheduler
 // https://www.npmjs.com/package/google-news-scraper
 // ====================================================================
-const info_chanel = 'kyivpasstrans';
-
-const airauth = {baseID: process.env.AIRTABLE_BASE,
+const AirtablePlus = require('airtable-plus');
+const airAuth = {baseID: process.env.AIRTABLE_BASE,
     apiKey: process.env.AIRTABLE_KEY}
 
-const AirtablePlus = require('airtable-plus');
-const tgChnl = new AirtablePlus({ ...airauth, tableName: info_chanel,
-    transform: ({fields})=>fields.postURL // делаем из этого список урл
+const lastDate = new AirtablePlus({  ...airAuth, tableName: sCity,
+    transform: ({fields})=>fields.Created // делаем из этого архив заголовков
 });
-const cityData = new AirtablePlus({  ...airauth, tableName: sCity,
+const cityData = new AirtablePlus({  ...airAuth, tableName: sCity,
     transform: ({fields})=>fields.title // делаем из этого архив заголовков
 });
-const stemsData = new AirtablePlus({  ...airauth, tableName: 'StemsWght',
+const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
     transform: ({id,fields})=>{StemsWght[fields.Stem]=fields.Weight; StemsID[fields.Stem]=id}
 });
 
@@ -32,27 +31,9 @@ const { SentimentManager } = require('node-nlp');
 const sentiment = new SentimentManager();
 let natural = require('natural'); 
 const wuzzy = require('wuzzy')
-// ====================================================================
-const cheerio = require('cheerio')
-const fetch = require('node-fetch');
-const urlExist = require("url-exist"); 
 
-const {sendLink, sendWoLink, getTgJson} = require('./telegram_api');
-
-const toTelegram = async (el)=>{ 
-    if (el.score<=0 || el.title =='' || el.link =='') return    
-    try{ 
-        const getURL = cheerio.load(await fetch(el.link).then(res => res.text()))
-        newsUrl = getURL('c-wiz a[rel=nofollow]').attr('href')
-    } catch (err){ newsUrl = el.link } // если не можем заресолвить полную
-
-    let not404 = await urlExist(newsUrl)
-    if (!not404) return console.log(`❌ 404 on ${newsUrl}`)
-
-    let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
-    await sendLink(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
-    console.log(`✅ to TG ${el.title}`)
-}
+const {postNews} = require('./telegram_api');
+const {getTGugaga} = require('./telegram_chnl');
 
 // ====================================================================
 
@@ -79,67 +60,54 @@ const toDB = async (el)=>{
             el.fresh = (el.time.includes('минут')?3:(el.time.includes('час')?2:(el.time.includes('дней')?0:1)))            
         }
 
-const UVAGA = `<div class=\"tgme_widget_message_text js-message_text\" dir=\"auto\"><b><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>Увага<i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>`;
+(async()=>{   
+     try{   
+        var getDate = new Date((await lastDate.read({ maxRecords: 1, 
+            fields: ['Created'], 
+            sort: [{field: 'Created', direction: 'desc'}]
+        }))[0])
+    } catch (err){ return console.log('Запрос на airtable ОШИБКА! '+err); }
 
+    console.log('Время прошлого запроса:', getDate);
+    if (Math.abs(getDate-new Date())<TIME_POROG) return console.log('< 4 часов');    
 
-async function getTGugaga(){
+    getTGugaga()    
 
-    const {items}=await getTgJson(info_chanel)
-    if (!items) return
-
-    const flt = items.filter(fl=>fl.title.startsWith('‼️Увага‼️'))
-    console.log(`С @${info_chanel} новостей = `+flt.length)
-    if (flt.length==0) return
-
-    try{   var stop_urls = await tgChnl.read({ 
-        maxRecords: 10,  sort: [{field: 'Created', direction: 'desc'}]
-    }) } catch (err){ return console.log('бд тг паблика ОШИБКА! '+err); }  
-
-    for (var i = 0; i < flt.length; i++) {
-        if (stop_urls.includes(flt[i].url)) continue // если уже запостили
-        let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "").replace('<br/>Перепрошуємо за незручності.', "").replace('<br/><br/>Перепрошуємо', "").replace(' за  тимчасові  незручності', "").replace(/<br\/>/g, "\n")
-        
-        sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
-        try{ await tgChnl.create({"postURL":flt[i].url});
-        } catch (err){ return console.log('бд тг запись ОШИБКА! '+err); }
-    }  
-}
-
-(async()=>{  getTGugaga()      
     try{   /// == забераем новости с гугла   
         var news = await googleNewsScraper({ timeframe,
             searchTerm: encodeURIComponent(sCity+" "+sExclude), prettyURLs: false,
             queryVars: { hl, gl}, // hl:"ru-RU" == язык // gl:"UA", === локация
             puppeteerArgs: [ '--no-sandbox', '--disable-setuid-sandbox'] // need to pass flags 4 Heroku
         })
-    } catch (err){ return console.log('Пюпитр ОШИБКА! '+err); }    
+    } catch (err){ return console.log('Scraper ОШИБКА! '+err); }    
       
     news = news.filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет') && (fl.time=='Вчера'||fl.time.includes('назад'))).filter(fl=>!fl.time.endsWith('дней назад') || fl.time.startsWith('5'))
-    console.log('С API новостей = '+news.length) // оставляем еще 5 дней тому
+    console.log('С Gogole шт = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
 
     try{   
         var oldNS = await cityData.read({ maxRecords: MAX_OLD_NEWS,
-            fields: ['title'], filterByFormula: 'score>0',
+            fields: ['title'], // filterByFormula: 'score>0',
             sort: [{field: 'Created', direction: 'desc'}]
         })
     } catch (err){ return console.log('Доступ к старым заголовкам ОШИБКА! '+err); }   
-
+    // тут сравниваем нечетко с прошлыми заголовками
     let filtred = news.filter(e=>{        
         for (var i = 0; i < oldNS.length; i++) if(wuzzy.levenshtein(oldNS[i], e.title)>FL_POROG) return false
         return true  
     })
-    console.log('[airtable dub] Осталось = '+filtred.length)
+    console.log('[> old dub] осталось шт = '+filtred.length)
     if (filtred.length===0) return
  
+    // получаем веса слов из таблицы чтобы доп сокрить
     try{ await stemsData.read(); 
     } catch (err){ return console.log('Доступ к стемам ОШИБКА! '+err); }     
 
-    for (var i = 0; i < filtred.length; i++) await toDB(filtred[i])
+    for (var i = 0; i < filtred.length; i++) await toDB(filtred[i]) // скорим
     
-    let pozitiv = filtred.filter(e=>e.score>0)
-    console.log('[pozitiv] Осталось = '+pozitiv.length)
+    let pozitiv = filtred.filter(e=>e.score>0) // фильтруем только больше 0
+    console.log('[> pozitiv] осталось шт = '+pozitiv.length)
 
-    pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(toTelegram)
+    pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
 
 })()
