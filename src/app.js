@@ -4,6 +4,8 @@ const {getTGugaga} = require('./telegram_chnl');
 const {postNews} = require('./telegram_api');
 const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./airtable_db');
 
+const SREZ_DNEI = 5;
+
 // ====================================================================
 const { SentimentManager } = require('node-nlp');
 const sentiment = new SentimentManager();
@@ -23,9 +25,8 @@ const getNews4Google = async ()=>{
         })
     } catch (err){ console.error('Scraper ERR!', err); return []}    
       
-    return newsScr.filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет') && (fl.time=='Вчера'||fl.time.includes('назад'))).filter(fl=>!fl.time.endsWith('дней назад') || fl.time.startsWith('5'))
+    return newsScr.filter(fl=>fl.time=='Вчера'||fl.time.includes('назад')).filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет')).filter(fl=>fl.time.includes('дн')?(parseInt(fl.time)<=SREZ_DNEI):true)    
 }
-
 
 // ====================================================================
 // MAIN code
@@ -40,7 +41,7 @@ const getNews4Google = async ()=>{
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
-
+        
     let filtred = await exclOldNews(news)
     console.log('[old dub] Remain news = '+filtred.length)
     if (filtred.length===0) return
