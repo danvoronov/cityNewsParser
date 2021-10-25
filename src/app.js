@@ -20,12 +20,12 @@ const getNews4Google = async ()=>{
     try{   /// == забераем новости с гугла   
         var newsScr = await googleNewsScraper({ timeframe,
             searchTerm: encodeURIComponent(sCity+" "+sExclude), prettyURLs: false,
-            queryVars: { hl, gl}, // hl:"ru-RU" == язык // gl:"UA", === локация
+            queryVars: { hl, gl}, // hl:"ru-RU" <== lang // gl:"UA" <=== location
             puppeteerArgs: [ '--no-sandbox', '--disable-setuid-sandbox'] // need to pass flags 4 Heroku
         })
-    } catch (err){ console.error('Scraper ERR!', err); return []}    
-      
-    return newsScr.filter(fl=>fl.time=='Вчера'||fl.time.includes('назад')).filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет')).filter(fl=>fl.time.includes('дн')?(parseInt(fl.time)<=SREZ_DNEI):true)    
+    } catch (err){ console.error('Scraper ERR!', err); return []} 
+
+    return newsScr.filter(fl=>fl.time=='Вчера'||fl.time.includes('назад')).filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет')).filter(fl=>(fl.time.includes('дн')||fl.time.includes('день'))?(parseInt(fl.time)<=SREZ_DNEI):true)    
 }
 
 // ====================================================================
@@ -34,18 +34,18 @@ const getNews4Google = async ()=>{
 (async()=>{   console.log('NEWS for',sCity.toUpperCase())
 
     if (!(await isFromLastRun(hoursBetween))) 
-        return console.log(`< ${hoursBetween} hours!`);    
+        return console.log(`< ${hoursBetween} hours!`);  
 
-    getTGugaga()    
+    await getTGugaga()      
 
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
-        
+
     let filtred = await exclOldNews(news)
     console.log('[old dub] Remain news = '+filtred.length)
     if (filtred.length===0) return
- 
+
     // получаем веса слов из таблицы чтобы доп сокрить
     let [StemsWght, StemsID] = await getStems()
     if (!StemsWght || !StemsID) return
