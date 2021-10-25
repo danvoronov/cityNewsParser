@@ -33,17 +33,20 @@ const getNews4Google = async ()=>{
 // =========
 (async()=>{   console.log('NEWS for',sCity.toUpperCase())
 
-    if (process.env.HOURS_BETWEEN>0 && !(await isFromLastRun(process.env.HOURS_BETWEEN))) 
+    if (!process.env.DEBUG && !(await isFromLastRun(process.env.HOURS_BETWEEN))) 
         return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);      
 
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
 
-    // let filtred = news
-    let filtred = await exclOldNews(news)    
-    console.log('[old dub] Remain news = '+filtred.length)
-    if (filtred.length===0) return
+    let filtred
+    if (!process.env.DEBUG) {
+        filtred = await exclOldNews(news)    
+        console.log('[old dub] Remain news = '+filtred.length)
+        if (filtred.length===0) return  
+    } else filtred = news
+
 
     // получаем веса слов из таблицы чтобы доп сокрить
     let [StemsWght, StemsID] = await getStems()
@@ -62,7 +65,7 @@ const getNews4Google = async ()=>{
             filtred[i].score = score
             filtred[i].stems = stems.join(' ')
 
-            await saveNews(filtred[i]);
+            if (!process.env.DEBUG) await saveNews(filtred[i]);
 
             // проритет близости к сейчс
             filtred[i].fresh = (filtred[i].time.includes('минут')?3:(filtred[i].time.includes('час')?2:(filtred[i].time.includes('дней')?0:1)))         
@@ -73,6 +76,6 @@ const getNews4Google = async ()=>{
 
     pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
 
-    await getTGugaga()   
+    if (!process.env.DEBUG) await getTGugaga()   
 
 })()

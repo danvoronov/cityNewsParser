@@ -8,22 +8,22 @@ const urlExist= async checkUrl => {
 
 
 module.exports.postNews = async el => { if (el.score<=0 || el.title =='' || el.link =='') return  
-    var newsUrl = el.link  
+    let newsUrl = el.link  
     try{ 
         const {body} = await got(el.link)
         const getRealURL = $.load(body)('c-wiz a[rel=nofollow]').attr('href') 
         if (getRealURL.startsWith('http')) {
-            let not404 = await urlExist(getRealURL)
-            if (!not404) return console.log(`❌ 404 on ${getRealURL}`)
-            newsUrl = getURL // проверка что это таки URL
-        }
+            if (await urlExist(getRealURL)) newsUrl = getRealURL
+                else return console.log(`❌ 404 on ${getRealURL}`)
+        } else console.log(`❌ ${getRealURL} not url`)
     } catch (err){ 
-        console.log(`Some ERR on getting real URL from ${el.link}`) // если не можем заресолвить полную
+        console.log(i,`Some ERR on getting real URL from ${el.link}`) 
     } 
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
-    await sendToBot(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
-    console.log(`✅ to TG ${el.title}`)
+    if (!process.env.DEBUG) 
+        await sendToBot(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
+    console.log(`✅ Send to TG "${el.title}"`)
 }
 
 
