@@ -11,12 +11,16 @@ const UVAGA = `<div class=\"tgme_widget_message_text js-message_text\" dir=\"aut
 
 const {sendWoLink, getTgJson} = require('./telegram_api');
 
+function countIn(str, cnt) {
+    return ((str.length - str.replace(new RegExp(cnt,"g"), "").length) / cnt.length)
+}
+
 module.exports.getTGugaga = async (chanel_name) => { 
     const {items}=await getTgJson(info_chanel)
     if (!items) return
 
     const flt = items.filter(fl=>fl.title.startsWith('‼️Увага‼️'))
-    console.log(`С @${info_chanel} новостей = `+flt.length)
+    console.log(`From @${info_chanel} filter = `+flt.length)
     if (flt.length==0) return
 
     try{   var stop_urls = await tgChnl.read({ 
@@ -25,9 +29,15 @@ module.exports.getTGugaga = async (chanel_name) => {
 
     for (var i = 0; i < flt.length; i++) {
         if (stop_urls.includes(flt[i].url)) continue // если уже запостили
-        console.log(`С @${info_chanel} запостили = `+flt[i].url)
-        let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "").replace('<br/>Перепрошуємо за незручності.', "").replace('<br/><br/>Перепрошуємо', "").replace(' за  тимчасові  незручності', "").replace(/<br\/>/g, "\n")
+        console.log(`From @${info_chanel} post = `+flt[i].url)
         
+        let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "")
+        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n")
+        if(clean_text.indexOf("буде організовано")>-1) clean_text = clean_text.slice(0,clean_text.indexOf("буде організовано"))+'...'
+
+        let b_closed = countIn(clean_text,"<b>")-countIn(clean_text,"</b>")
+        clean_text += '</b>'.repeat(b_closed) // закрываем все теги что срезали
+      
         sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
         try{ await tgChnl.create({"postURL":flt[i].url});
         } catch (err){ return console.log('бд тг запись ОШИБКА! '+err); }

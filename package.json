@@ -4,7 +4,8 @@
     "description": "Получает новости от гугла, проверяет на чернуху",
     "scripts": {
         "start": "node src/app.js",
-        "loc": "node -r dotenv/config src/app.js"
+        "loc": "node -r dotenv/config src/app.js",
+        "tst": "node -r dotenv/config gettext/src.js"
     },
     "author": "Dan Voronov",
     "dependencies": {
