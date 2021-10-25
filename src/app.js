@@ -1,4 +1,4 @@
-const {StopSrc, sCity, hoursBetween, sExclude, hl, gl, timeframe, maxPost} = require('../filter_params');
+const {StopSrc, sCity, sExclude, hl, gl, timeframe, maxPost} = require('../filter_params');
 
 const {getTGugaga} = require('./telegram_chnl');
 const {postNews} = require('./telegram_api');
@@ -33,16 +33,15 @@ const getNews4Google = async ()=>{
 // =========
 (async()=>{   console.log('NEWS for',sCity.toUpperCase())
 
-    if (!(await isFromLastRun(hoursBetween))) 
-        return console.log(`< ${hoursBetween} hours!`);  
-
-    await getTGugaga()      
+    if (process.env.HOURS_BETWEEN>0 && !(await isFromLastRun(process.env.HOURS_BETWEEN))) 
+        return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);      
 
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) // оставляем еще 5 дней тому
     if (news.length===0) return
 
-    let filtred = await exclOldNews(news)
+    // let filtred = news
+    let filtred = await exclOldNews(news)    
     console.log('[old dub] Remain news = '+filtred.length)
     if (filtred.length===0) return
 
@@ -73,5 +72,7 @@ const getNews4Google = async ()=>{
     console.log('[>0 score] Remain news = '+pozitiv.length)
 
     pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
+
+    await getTGugaga()   
 
 })()

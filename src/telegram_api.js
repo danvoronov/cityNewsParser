@@ -1,28 +1,42 @@
 const got = require('got');
-const chat_id = process.env.TELEGRAM_CHANEL_ID  // ID канала начинается с -
+const $ = require('cheerio')
 
-module.exports.sendWoLink = async(t)=> await sendToBot(t, true)
+const urlExist= async checkUrl => {
+    const response = await got.head(checkUrl,{throwHttpErrors: false, retryCount:1})
+    return response !== undefined && !/4\d\d/.test(response.statusCode) // !== 401 402 403 404
+}
 
-const cheerio = require('cheerio')
-const fetch = require('node-fetch');
-const urlExist = require("url-exist"); 
 
-module.exports.postNews = async (el)=>{ 
-    if (el.score<=0 || el.title =='' || el.link =='') return  
-    var newsUrl = ''  
+module.exports.postNews = async el => { if (el.score<=0 || el.title =='' || el.link =='') return  
+    var newsUrl = el.link  
     try{ 
-        const getURL = cheerio.load(await fetch(el.link).then(res => res.text()))
-        newsUrl = getURL('c-wiz a[rel=nofollow]').attr('href')
-    } catch (err){ newsUrl = el.link } // если не можем заресолвить полную
-
-    let not404 = await urlExist(newsUrl)
-    if (!not404) return console.log(`❌ 404 on ${newsUrl}`)
+        const {body} = await got(el.link)
+        const getRealURL = $.load(body)('c-wiz a[rel=nofollow]').attr('href') 
+        if (getRealURL.startsWith('http')) {
+            let not404 = await urlExist(getRealURL)
+            if (!not404) return console.log(`❌ 404 on ${getRealURL}`)
+            newsUrl = getURL // проверка что это таки URL
+        }
+    } catch (err){ 
+        console.log(`Some ERR on getting real URL from ${el.link}`) // если не можем заресолвить полную
+    } 
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
     await sendToBot(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
     console.log(`✅ to TG ${el.title}`)
 }
 
+
+module.exports.getTgJson = async chanel_name => { 
+    const tg_bridge = `https://wtf.roflcopter.fr/rss-bridge/?action=display&bridge=Telegram&username=${chanel_name}&format=Json`
+    try {       
+        return await got.get(tg_bridge).json();
+    } catch (er) { return console.error(`${chanel_name} JSON problem: ${er}`)}
+};
+
+// ================================================================
+
+const chat_id = process.env.TELEGRAM_CHANEL_ID  // ID канала начинается с -
 async function sendToBot (text, disable_web_page_preview) { 
     const json = { chat_id, text, 'parse_mode': 'HTML', disable_web_page_preview}
     try {
@@ -36,9 +50,4 @@ async function sendToBot (text, disable_web_page_preview) {
     }
 }
 
-module.exports.getTgJson = async (chanel_name) => { 
-    const url = `https://wtf.roflcopter.fr/rss-bridge/?action=display&bridge=Telegram&username=${chanel_name}&format=Json`
-    try {       
-        return await got.get(url).json();
-    } catch (er) { return console.error('Проблема получения JSON канала:', er)}
-};
+module.exports.sendWoLink = async t => await sendToBot(t, true)
