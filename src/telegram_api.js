@@ -22,7 +22,7 @@ module.exports.postNews = async el => { if (el.score<=0 || el.title =='' || el.l
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
     if (!process.env.DEBUG) 
-        await sendToBot(`${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
+        await sendToBot(process.env.TELEGRAM_CHANEL_ID, `${indicator} | ${el.time} |  <a href="${newsUrl}">🌐 ПЕРЕЙТИ</a>`)
     console.log(`✅ Send to TG "${el.title}"`)
 }
 
@@ -36,8 +36,7 @@ module.exports.getTgJson = async chanel_name => {
 
 // ================================================================
 
-const chat_id = process.env.TELEGRAM_CHANEL_ID  // ID канала начинается с -
-async function sendToBot (text, disable_web_page_preview) { 
+async function sendToBot (chat_id, text, disable_web_page_preview) { 
     const json = { chat_id, text, 'parse_mode': 'HTML', disable_web_page_preview}
     try {
         const body = await got.post('https://api.telegram.org/bot' + process.env.TBOT_API + '/sendMessage', {json}).json();
@@ -50,4 +49,5 @@ async function sendToBot (text, disable_web_page_preview) {
     }
 }
 
-module.exports.sendWoLink = async t => await sendToBot(t, true)
+module.exports.admNotify = async t => await sendToBot(process.env.TELEGRAM_ADMIN_ID, t)
+module.exports.sendWoLink = async t => await sendToBot(process.env.TELEGRAM_CHANEL_ID, t, true)

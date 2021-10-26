@@ -1,7 +1,8 @@
 const {StopSrc, sCity, sExclude, hl, gl, timeframe, maxPost} = require('../filter_params');
 
+const {getBZHrss} = require('./getRSS');
 const {getTGugaga} = require('./telegram_chnl');
-const {postNews} = require('./telegram_api');
+const {postNews, admNotify} = require('./telegram_api');
 const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./airtable_db');
 
 const SREZ_DNEI = 5;
@@ -32,21 +33,24 @@ const getNews4Google = async ()=>{
 // MAIN code
 // =========
 (async()=>{   console.log('NEWS for',sCity.toUpperCase())
-
-    if (!process.env.DEBUG && !(await isFromLastRun(process.env.HOURS_BETWEEN))) 
-        return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);      
+    
+    if (!process.env.DEBUG && !(await isFromLastRun(process.env.HOURS_BETWEEN))) {
+        await admNotify('↔️ Parser halt due to time restriction.')
+        return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);   
+    }
 
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) // оставляем еще 5 дней тому
-    if (news.length===0) return
+    if (news.length===0) return    
+    let BZHnews = await getBZHrss()
+    console.log('News from BZH = '+BZHnews.length) 
 
     let filtred
     if (!process.env.DEBUG) {
-        filtred = await exclOldNews(news)    
+        filtred = await exclOldNews([...news, ...BZHnews])    
         console.log('[old dub] Remain news = '+filtred.length)
         if (filtred.length===0) return  
     } else filtred = news
-
 
     // получаем веса слов из таблицы чтобы доп сокрить
     let [StemsWght, StemsID] = await getStems()
@@ -72,9 +76,11 @@ const getNews4Google = async ()=>{
         }
     
     let pozitiv = filtred.filter(e=>e.score>0) // фильтруем только больше 0
-    console.log('[>0 score] Remain news = '+pozitiv.length)
+    console.log('[>0 score] Remain news = '+pozitiv.length)    
 
     pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
+
+    await admNotify(`API:${news.length} w/oDUB:${filtred.length} OK:${pozitiv.length}`)
 
     if (!process.env.DEBUG) await getTGugaga()   
 
