@@ -8,17 +8,19 @@ const urlExist= async checkUrl => {
 
 
 module.exports.postNews = async el => { if (el.score<=0 || el.title =='' || el.link =='') return  
-    let newsUrl = el.link  
-    try{ 
-        const {body} = await got(el.link)
-        const getRealURL = $.load(body)('c-wiz a[rel=nofollow]').attr('href') 
-        if (getRealURL.startsWith('http')) {
-            if (await urlExist(getRealURL)) newsUrl = getRealURL
-                else return console.log(`❌ 404 on ${getRealURL}`)
-        } else console.log(`❌ ${getRealURL} not url`)
-    } catch (err){ 
-        console.log(i,`Some ERR on getting real URL from ${el.link}`) 
-    } 
+    let newsUrl = el.link 
+    if (el.source!='БЖ'){
+        try{ 
+            const {body} = await got(el.link)
+            const getRealURL = $.load(body)('c-wiz a[rel=nofollow]').attr('href') 
+            if (getRealURL.startsWith('http')) {
+                if (await urlExist(getRealURL)) newsUrl = getRealURL
+                    else return console.log(`❌ 404 on ${getRealURL}`)
+            } else console.log(`❌ ${getRealURL} not url`)
+        } catch (err){ 
+            console.log(i,`Some ERR on getting real URL from ${el.link}`) 
+        } 
+    }
 
     let indicator = (el.score<=3?'🟡':(el.score<=7?'💛':(el.score<=13?'🟢':'💚')))
     if (!process.env.DEBUG) 
