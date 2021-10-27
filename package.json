@@ -1,11 +1,10 @@
 {
     "name": "kyivnews-filter",
     "version": "1.3.6",
-    "description": "Получает новости от гугла, проверяет на чернуху",
+    "description": "Получает новости от гугла и др источников, фильтрует чернуху",
     "scripts": {
         "start": "node src/app.js",
-        "loc": "node -r dotenv/config src/app.js",
-        "tst": "node -r dotenv/config gettext/src.js"
+        "loc": "node -r dotenv/config src/app.js"
     },
     "author": "Dan Voronov",
     "dependencies": {

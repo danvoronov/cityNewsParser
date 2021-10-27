@@ -80,7 +80,7 @@ const getNews4Google = async ()=>{
 
     pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
 
-    await admNotify(`API:${news.length} w/oDUB:${filtred.length} OK:${pozitiv.length}`)
+    await admNotify(`API:${news.length} w/oDUB:${filtred.length} <b>OK :${pozitiv.length}</b>`)
 
     if (!process.env.DEBUG) await getTGugaga()   
 

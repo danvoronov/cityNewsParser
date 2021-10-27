@@ -16,7 +16,7 @@ const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
 
 
 const MAX_OLD_NEWS = 300 
-const FL_POROG = .8 
+const FL_POROG = .56 
 
 const natural = require('natural'); 
 module.exports.exclOldNews = async(news)=> {
@@ -28,7 +28,8 @@ module.exports.exclOldNews = async(news)=> {
     } catch (err){ console.error('Airtable for old news ERR', err); return []}   
     
     // тут сравниваем нечетко с прошлыми заголовками    
-    return news.filter(e=>{                
+    return news.filter(e=>{    
+        if(e.title[e.title.length-1]==')') e.title = e.title.split('(')[0]            
         for (var i = 0; i < oldNS.length; i++) if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
         return true  
     })
