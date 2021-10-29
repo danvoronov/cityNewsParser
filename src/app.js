@@ -58,6 +58,7 @@ const getNews4Google = async ()=>{
 
     for (var i = 0; i < filtred.length; i++) {
             let {score} = await sentiment.process('ru', filtred[i].title)
+            filtred[i].sentiment = score
 
             let stems = natural.PorterStemmerRu.tokenizeAndStem(filtred[i].title)
 
@@ -66,10 +67,12 @@ const getNews4Google = async ()=>{
                 if(StemsID[wrd]) filtred[i].stmlink.push(StemsID[wrd])
                 return acc+(StemsWght[wrd]?StemsWght[wrd]:0)
             },0);
+
             filtred[i].score = score
             filtred[i].stems = stems.join(' ')
 
-            if (!process.env.DEBUG) await saveNews(filtred[i]);
+            if (!process.env.DEBUG) 
+                await saveNews(filtred[i]);
 
             // проритет близости к сейчс
             filtred[i].fresh = (filtred[i].time.includes('минут')?3:(filtred[i].time.includes('час')?2:(filtred[i].time.includes('дней')?0:1)))         
