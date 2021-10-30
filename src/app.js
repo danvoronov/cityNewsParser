@@ -1,6 +1,8 @@
 const {StopSrc, sCity, sExclude, hl, gl, timeframe, maxPost} = require('../filter_params');
 
 const {getBZHrss} = require('./getRSS');
+const {getNewsText, getRealURL} = require('./get_news_text')
+
 const {getTGugaga} = require('./telegram_chnl');
 const {postNews, admNotify} = require('./telegram_api');
 const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./airtable_db');
@@ -57,20 +59,27 @@ const getNews4Google = async ()=>{
     if (!StemsWght || !StemsID) return
 
     for (var i = 0; i < filtred.length; i++) {
+
+            if (filtred[i].source!='БЖ') filtred[i].link = await getRealURL(filtred[i].link)
+            filtred[i].text = await getNewsText(filtred[i].source, filtred[i].link)
+
+            if (filtred[i].text && filtred[i].text.length>140) 
+                filtred[i].TS = (await sentiment.process('ru', filtred[i].text)).score
+
             let {score} = await sentiment.process('ru', filtred[i].title)
             filtred[i].sentiment = score
 
-            let stems = natural.PorterStemmerRu.tokenizeAndStem(filtred[i].title)
+            let stems = await natural.PorterStemmerRu.tokenizeAndStem(filtred[i].title)
+            filtred[i].stems = stems.join(' ')
 
             filtred[i].stmlink=[] 
             score += stems.reduce((acc,wrd)=>{
                 if(StemsID[wrd]) filtred[i].stmlink.push(StemsID[wrd])
                 return acc+(StemsWght[wrd]?StemsWght[wrd]:0)
             },0);
-
             filtred[i].score = score
-            filtred[i].stems = stems.join(' ')
-
+            filtred[i].indicator = (score<=0?'🔴':(score<=3?'🟡':(score<=7?'💛':(score<=13?'🟢':'💚'))))
+            
             if (!process.env.DEBUG) 
                 await saveNews(filtred[i]);
 
@@ -81,10 +90,10 @@ const getNews4Google = async ()=>{
     let pozitiv = filtred.filter(e=>e.score>0) // фильтруем только больше 0
     console.log('[>0 score] Remain news = '+pozitiv.length)    
 
-    pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
-
+    if (process.env.DEBUG) return
+        
     await admNotify(`API:${news.length} w/oDUB:${filtred.length} <b>OK :${pozitiv.length}</b>`)
-
-    if (!process.env.DEBUG) await getTGugaga()   
+    pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
+    await getTGugaga()   
 
 })()
