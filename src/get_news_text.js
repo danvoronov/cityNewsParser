@@ -10,6 +10,7 @@ const urlExist= async checkUrl => {
 module.exports.getRealURL = async (link)=> { 
   try{ 
       const {body} = await got(link)
+<<<<<<< HEAD
       const direct_url = cheerio.load(body)('c-wiz a[rel=nofollow]').attr('href') 
       if (direct_url.startsWith('http')) {
           if (await urlExist(direct_url)) return direct_url
@@ -19,6 +20,17 @@ module.exports.getRealURL = async (link)=> {
       console.log(i,`Some ERR on getting real URL from ${link}`) 
   } 
   return ''
+=======
+      const getRealURL = cheerio.load(body)('c-wiz a[rel=nofollow]').attr('href') 
+      if (getRealURL.startsWith('http')) {
+          if (await urlExist(getRealURL)) return getRealURL
+          console.log(`❌ 404 on ${getRealURL}`)
+      } else console.log(`❌ ${getRealURL} not url`)
+      return link
+  } catch (err){ 
+      console.log(i,`Some ERR on getting real URL from ${filtred[i].link}`) 
+  } 
+>>>>>>> 68e4c44194a6bf04661b5769b1ccf152875461e8
 }
 
 module.exports.getNewsText = async (source, url)=> { 
