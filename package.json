@@ -1,14 +1,16 @@
 {
     "name": "kyivnews-filter",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "Получает новости по городу, фильтрует чернуху",
     "scripts": {
-        "start": "node src/app.js",
+        "start": "node heroku.js",
+        "check": "node src/app.js",
         "loc": "node -r dotenv/config src/app.js"
     },
     "author": "Dan Voronov",
     "dependencies": {
         "airtable-plus": "^1.0.4",
+        "article-parser": "^4.2.10",
         "dotenv": "^10.0.0",
         "google-news-scraper": "^1.0.7",
         "got": "^11.8.2",
