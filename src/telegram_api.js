@@ -1,4 +1,5 @@
-module.exports.postNews = async el => { if (el.score<=0 || el.title =='' || el.link =='') return  
+module.exports.postNews = async el => { 
+    if (el.score<=0 || el.title =='' || el.link =='') return  
     if (await sendToBot(process.env.TELEGRAM_CHANEL_ID, `${el.indicator} | ${el.time} |  <a href="${el.link}">🌐 ПЕРЕЙТИ</a>`))
         console.log(`✅ Send to TG "${el.title}"`)
 }
@@ -13,6 +14,9 @@ module.exports.getTgJson = async chanel_name => {
 // ================================================================
 const got = require('got');
 async function sendToBot (chat_id, text, disable_web_page_preview) { 
+    
+    if (process.env.DEBUG) return console.log(`TG: ${chat_id} TEXT: ${text}`)
+
     const json = { chat_id, text, 'parse_mode': 'HTML', disable_web_page_preview}
     try {
         const body = await got.post('https://api.telegram.org/bot' + process.env.TBOT_API + '/sendMessage', {json}).json();

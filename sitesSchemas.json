@@ -1,24 +1,16 @@
 {"КиевКомментарии":{
-	"test":"https://kyiv.comments.ua/news/society/developments/5140-v-kievskoy-oblasti-posle-rekonstrukcii-otkroyut-ulicu-foto.html",
-	"useSchema": true,
 	"endon" : ["Напом", "Как писали \"Комментарии\""]
 },
 "В городе":{
-	"test":"https://kiev.vgorode.ua/news/sobytyia/a1183395-strannoe-nesovpadenie-chislo-pozitivnykh-kovidnykh-testov-i-novykh-sluchaev-raznjatsja",
-	"drop": "Не забудьте подписаться на канал Vgorode.ua в Telegram",
-	"main_class": ".inner-news",
-	"endon" : ["Напомним", "Присоединяйтесь к группе своего "]
+	"drop": "<strong>Не забудьте подписаться на канал <a href=\"https://t.me/allkiev\">Vgorode.ua</a> в Telegram.</strong>",
+	"endon" : ["Напомним", "Присоединяйтесь к группе своего ","<p>Если Вы обнаружили ошибку в тексте", "<p>Ранее <a href=\"https://kiev.vgorode.ua/\">Vgorode</a> сообщал"]
 },
 "БЖ":{
-	"test":"https://bzh.life/gorod/zavod-bilshovik-u-kievi-privatizuvali-ta-zbirayutsya-perebudovuvati-shho-tam-bude/",
-	"main_class": ".wpb_text_column",
 	"drop": "Читайте также:",
-	"endon" : ["Фото", "Ранее"]
+	"endon" : ["Ранее"]
 },
 "КиевВласть":{
-	"test":"https://kievvlast.com.ua/news/kan-rabotaet-nad-initsiativoj-sozdaniya-e-ko-parka-na-territorii-gorbachihi-v-kievenikonov",
 	"drop": "Подписывайтесь на новости “КиевVласть”",
-	"main_class": ".content p",
 	"endon" : ["Напомним, ранее ", "Читайте: "]
 },
 "NV BIZ":{

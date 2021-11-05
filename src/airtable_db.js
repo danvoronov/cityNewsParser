@@ -4,10 +4,12 @@ const AirtablePlus = require('airtable-plus');
 const airAuth = {baseID: process.env.AIRTABLE_BASE,
     apiKey: process.env.AIRTABLE_KEY}
 
-const lastDate = new AirtablePlus({  ...airAuth, tableName: sCity,
+const cityTbl = sCity+(process.env.DEBUG?' DEBUG':'')
+
+const lastDate = new AirtablePlus({  ...airAuth, tableName: cityTbl,
     transform: ({fields})=>fields.Created // делаем из этого архив заголовков
 });
-const cityData = new AirtablePlus({  ...airAuth, tableName: sCity,
+const cityData = new AirtablePlus({  ...airAuth, tableName: cityTbl,
     transform: ({fields})=>fields.title // делаем из этого архив заголовков
 });
 const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
