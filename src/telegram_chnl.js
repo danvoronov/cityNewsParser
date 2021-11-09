@@ -32,7 +32,7 @@ module.exports.getTGugaga = async (chanel_name) => {
         console.log(`From @${info_chanel} post = `+flt[i].url)
         
         let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "")
-        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n")
+        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n").replace(/&nbsp;/g, " ")
         if(clean_text.indexOf("буде організовано")>-1) clean_text = clean_text.slice(0,clean_text.indexOf("буде організовано"))+'...'
 
         let b_closed = countIn(clean_text,"<b>")-countIn(clean_text,"</b>")
