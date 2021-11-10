@@ -23,7 +23,7 @@ let natural = require('natural');
         return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);   
     }
 
-    if (!process.env.DEBUG) getTGugaga()   // парсинг паблика ТГ
+    getTGugaga()   
 
     let news = await getNews4Google()
     console.log('News from Google API = '+news.length) 
@@ -67,6 +67,8 @@ let natural = require('natural');
         filtred[i].score = score
         filtred[i].indicator = (score<=0?'🔴':(score<=3?'🟡':(score<=7?'💛':(score<=13?'🟢':'💚'))))
         if (score==0) filtred[i].indicator = '⚪️' // для теста серый
+
+        if (score<-5) { delete filtred[i]; continue } // оч негативные удаляем
         
         await saveNews(filtred[i]);
 

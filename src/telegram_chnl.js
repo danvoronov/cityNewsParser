@@ -15,6 +15,8 @@ function countIn(str, cnt) {
     return ((str.length - str.replace(new RegExp(cnt,"g"), "").length) / cnt.length)
 }
 
+const NS_POROG = 430
+
 module.exports.getTGugaga = async (chanel_name) => { 
     const {items}=await getTgJson(info_chanel)
     if (!items) return
@@ -32,12 +34,16 @@ module.exports.getTGugaga = async (chanel_name) => {
         console.log(`From @${info_chanel} post = `+flt[i].url)
         
         let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "")
-        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n").replace(/&nbsp;/g, " ")
+        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/<div[^>]*>/g, '')
+
         if(clean_text.indexOf("буде організовано")>-1) clean_text = clean_text.slice(0,clean_text.indexOf("буде організовано"))+'...'
+        else if (clean_text.length>NS_POROG) clean_text = clean_text.slice(0,NS_POROG)+'...'
 
         let b_closed = countIn(clean_text,"<b>")-countIn(clean_text,"</b>")
         clean_text += '</b>'.repeat(b_closed) // закрываем все теги что срезали
-      
+  
+        if (process.env.DEBUG) return
+
         sendWoLink(`<a href="${flt[i].url}">🚌   Київпастранс</a>\n\n${clean_text}`) // отключаем привью
         try{ await tgChnl.create({"postURL":flt[i].url});
         } catch (err){ return console.log('бд тг запись ОШИБКА! '+err); }
