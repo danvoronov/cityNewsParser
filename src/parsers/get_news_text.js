@@ -1,6 +1,6 @@
 const got = require('got'), cheerio = require('cheerio')
 const fs = require('fs');
-const ss = require('../sitesSchemas');
+const ss = require('../../sitesSchemas');
 
 const HTMLToText = require('./html2txt');
 
@@ -23,7 +23,7 @@ module.exports.getRealURL = async (link)=> { if (link=='') return ''
           console.log(`❌ 404 on ${direct_url}`)
       } else console.log(`❌ ${direct_url} not url`)
   } catch (err){ 
-      console.log(i,`Some ERR on getting real URL from ${link}`) 
+      console.log(`Some ERR on getting real URL from ${link}`) 
   } 
   return ''
 }
@@ -31,15 +31,17 @@ module.exports.getRealURL = async (link)=> { if (link=='') return ''
 // ======================================================================
 
 module.exports.getNewsText = async (source, url)=> { 
-    if (url.trim()=='') return
-    await sleep(1000); console.log('📝 Fetching ' + url);
+    if (url.trim()=='') return ['','']
+    await sleep(1000); console.log('\n📝 Fetching ' + url);
 
     try {
 
-      var {content, description} = await extract(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246'}});
+      let res = await extract(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246'}});
+      if (!res) { console.error('ERR on url:', url); return ['',''] }
       // if (article) fs.writeFile('gettext/summary.txt', HTMLToText(content),(err)=>{if (err) console.log(err); console.log('saved!')}) // для дебага
+      var {content, description} = res
     
-    } catch (err) { console.trace(err); return ['',''] }
+    } catch (err) { console.error('extract FAIL',err); return ['',''] }
 
     let ans = HTMLToText(content)
     

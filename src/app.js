@@ -1,12 +1,12 @@
 const {getBZHrss} = require('./parsers/getRSS');
-const {getTGugaga} = require('./parsers/telegram_chnl');
-const {getNews4Google} = require('./parsers/googleNews')
+const getNews = require('./parsers/googleNews')
+const {getNewsText, getRealURL} = require('./parsers/get_news_text')
 
-const {getNewsText, getRealURL} = require('./get_news_text')
+const {getTGugaga} = require('./kyivpasstrans');
 
 const {maxPost} = require('../filter_params');
-const {postNews, admNotify} = require('./telegram_api');
-const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./airtable_db');
+const {postNews, admNotify} = require('./api/telegram_api');
+const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./api/airtable_db');
 
 // ====================================================================
 const { SentimentManager } = require('node-nlp');
@@ -25,7 +25,7 @@ let natural = require('natural');
 
     getTGugaga()   
 
-    let news = await getNews4Google()
+    let news = await getNews()
     console.log('News from Google API = '+news.length) 
     if (news.length===0) return    
     let BZHnews = await getBZHrss()
@@ -79,7 +79,7 @@ let natural = require('natural');
     let pozitiv = filtred.filter(e=>e.score>0) // фильтруем только больше 0
     console.log('[>0 score] Remain news = '+pozitiv.length)    
 
-    await admNotify(`API:${news.length} w/oDUB:${filtred.length} <b>OK :${pozitiv.length}</b>`)
+    await admNotify(`API:${news.length} w/oDUB:${filtred.length} <b>_OK: ${pozitiv.length}</b>`)
     pozitiv.sort((a, b) => b.score-a.score || b.fresh-a.fresh ).slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
 
 })()

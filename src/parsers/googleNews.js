@@ -4,7 +4,7 @@ const {StopSrc, sCity, sExclude, hl, gl, timeframe} = require('../../filter_para
 // https://www.npmjs.com/package/google-news-scraper
 // ====================================================================
 const googleNewsScraper = require('google-news-scraper');
-module.exports.getNews4Google = async ()=>{
+module.exports = async ()=>{
     
     console.log('NEWS for',sCity.toUpperCase())
     

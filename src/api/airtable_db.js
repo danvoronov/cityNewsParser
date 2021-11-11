@@ -1,4 +1,4 @@
-const {sCity} = require('../filter_params');
+const {sCity} = require('../../filter_params');
 
 const AirtablePlus = require('airtable-plus');
 const airAuth = {baseID: process.env.AIRTABLE_BASE,
@@ -65,4 +65,20 @@ module.exports.isFromLastRun = async(hours)=> {
     console.log('Time of last run:', getDate);
 
     return (Math.abs(getDate-new Date())>1000*60*60*hours)
+}
+
+const tgChnl = new AirtablePlus({ baseID: process.env.AIRTABLE_BASE,
+    apiKey: process.env.AIRTABLE_KEY, tableName: 'tgFilter'
+})
+module.exports.getTgPubData = async(tg_public)=> {
+    try{   
+        const res = await tgChnl.read({ maxRecords: 1, filterByFormula: `{chanel}='${tg_public}'`}),
+        {id, fields} = res[0]
+        return ({id, POSTS_FILTER: fields['start'], 
+                    stop_ids: fields['ids']?fields['ids'].split(',').map(e=>+e):[]})
+    } catch (err){ console.error('Airtable tgChnl ERR', err); return []}   
+}
+module.exports.setTgIds = async(_id, ids)=> {
+    try{ await tgChnl.update(_id, {ids: ids.join(',')})
+    } catch (err){ console.error('Airtable tgChnl update ERR', err); }     
 }
