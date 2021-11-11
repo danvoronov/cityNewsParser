@@ -1,6 +1,6 @@
-const {getBZHrss} = require('./getRSS');
-const {getTGugaga} = require('./telegram_chnl');
-const {getNews4Google} = require('./googleNews')
+const {getBZHrss} = require('./parsers/getRSS');
+const {getTGugaga} = require('./parsers/telegram_chnl');
+const {getNews4Google} = require('./parsers/googleNews')
 
 const {getNewsText, getRealURL} = require('./get_news_text')
 

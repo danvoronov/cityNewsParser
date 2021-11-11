@@ -2,6 +2,13 @@ const got = require('got'), cheerio = require('cheerio')
 const fs = require('fs');
 const ss = require('../sitesSchemas');
 
+const HTMLToText = require('./html2txt');
+
+const sleep = require('atomic-sleep');
+// https://www.npmjs.com/package/article-parser
+const { extract } = require('article-parser');
+
+
 const urlExist= async checkUrl => {
     const response = await got.head(checkUrl,{throwHttpErrors: false, retryCount:1})
     return response !== undefined && !/4\d\d/.test(response.statusCode) // !== 401 402 403 404
@@ -21,24 +28,7 @@ module.exports.getRealURL = async (link)=> { if (link=='') return ''
   return ''
 }
 
-const sleep = require('atomic-sleep');
-// https://www.npmjs.com/package/article-parser
-const { extract } = require('article-parser');
-
-const HTMLToText = (HTMLPart) => (
-  HTMLPart
-    .replace(/\n/ig, '')
-    .replace(/ /ig, ' ')
-    .replace(/<div>/ig, '')
-    .replace(/<span>/ig, '')
-    .replace(/<\/div>/ig, '\n')
-    .replace(/<\/span>/ig, '')
-    .replace(/<\/\s*(?:p|div)>/ig, '\n')
-    .replace(/<br[^>]*\/?>/ig, '\n')
-    .replace('&nbsp;', ' ')
-    .replace(/[^\S\r\n][^\S\r\n]+/ig, ' ')
-    .trim()
-);
+// ======================================================================
 
 module.exports.getNewsText = async (source, url)=> { 
     if (url.trim()=='') return

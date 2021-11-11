@@ -9,7 +9,8 @@ const tgChnl = new AirtablePlus({ baseID: process.env.AIRTABLE_BASE,
 const UVAGA = `<div class=\"tgme_widget_message_text js-message_text\" dir=\"auto\"><b><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>Увага<i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E280BC.png')\"><b>‼️</b></i>`;
 
 
-const {sendWoLink, getTgJson} = require('./telegram_api');
+const {sendWoLink, getTgJson} = require('../telegram_api');
+const simpleHTML = require('../html2txt');
 
 function countIn(str, cnt) {
     return ((str.length - str.replace(new RegExp(cnt,"g"), "").length) / cnt.length)
@@ -33,9 +34,9 @@ module.exports.getTGugaga = async (chanel_name) => {
         if (stop_urls.includes(flt[i].url)) continue // если уже запостили
         console.log(`From @${info_chanel} post = `+flt[i].url)
         
-        let clean_text = '<b>'+flt[i].content_html.replace(UVAGA, "").replace('</div>', "")
-        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо")).replace(/<br\/><br\/>/g, "\n").replace(/<br\/>/g, "\n").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/<div[^>]*>/g, '')
+        let clean_text = simpleHTML('<b>'+flt[i].content_html.replace(UVAGA, ""))
 
+        clean_text = clean_text.slice(0,clean_text.indexOf("Перепрошуємо"))
         if(clean_text.indexOf("буде організовано")>-1) clean_text = clean_text.slice(0,clean_text.indexOf("буде організовано"))+'...'
         else if (clean_text.length>NS_POROG) clean_text = clean_text.slice(0,NS_POROG)+'...'
 

@@ -1,4 +1,4 @@
-const {StopSrc, sCity, sExclude, hl, gl, timeframe} = require('../filter_params');
+const {StopSrc, sCity, sExclude, hl, gl, timeframe} = require('../../filter_params');
 // ====================================================================
 // https://devcenter.heroku.com/articles/scheduler
 // https://www.npmjs.com/package/google-news-scraper

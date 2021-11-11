@@ -1,0 +1,15 @@
+module.exports = (HTMLt) => HTMLt
+    .replace(/\n/ig, '')
+    .replace(/ /ig, ' ')
+    .replace('&nbsp;', ' ')
+    .replace(/&quot;/g, '"')    
+    .replace(/<div[^>]*>/g, '')
+    .replace(/<span[^>]*>/g, '')
+    .replace(/<a[^>]*>/g, '')
+    .replace(/<\/div>/ig, '\n')    
+    .replace(/<\/div>/ig, '\n')
+    .replace(/<\/a>/ig, '')
+    // .replace(/<\/\s*(?:p|div)>/ig, '\n')
+    .replace(/<br[^>]*\/?>/ig, '\n')
+    .replace(/[^\S\r\n][^\S\r\n]+/ig, ' ') // множественные пробелы
+    .trim()
