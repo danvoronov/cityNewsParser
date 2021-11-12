@@ -17,7 +17,7 @@ const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
 });
 
 
-const MAX_OLD_NEWS = 300 
+const MAX_OLD_NEWS = 500 
 const FL_POROG = .56 
 
 const natural = require('natural'); 
