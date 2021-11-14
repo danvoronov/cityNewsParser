@@ -1,11 +1,13 @@
 {
     "name": "kyivnews-filter",
-    "version": "1.5.8",
+    "version": "1.6.0",
     "description": "Получает новости по городу, фильтрует чернуху",
     "scripts": {
         "start": "node heroku.js",
-        "check": "node src/app.js",
-        "loc": "node -r dotenv/config src/app.js"
+        "check": "node src/tg-post.js",
+        "todb": "node src/main.js",
+        "locpost": "node -r dotenv/config src/tg-post.js",
+        "loc": "node -r dotenv/config src/main.js"
     },
     "author": "Dan Voronov",
     "dependencies": {

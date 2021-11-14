@@ -9,30 +9,32 @@ const sleep = require('atomic-sleep');
 const { extract } = require('article-parser');
 
 
-const urlExist= async checkUrl => {
+module.exports.urlExist= async checkUrl => {
     const response = await got.head(checkUrl,{throwHttpErrors: false, retryCount:1})
     return response !== undefined && !/4\d\d/.test(response.statusCode) // !== 401 402 403 404
 }
 
-module.exports.getRealURL = async (link)=> { if (link=='') return ''
+module.exports.directURL = async (link)=> { if (link=='') return ''
+  if (!link.startsWith('https://news.google.com/articles/')) return link
+    
   try{ 
       const {body} = await got(link)
       const direct_url = cheerio.load(body)('c-wiz a[rel=nofollow]').attr('href') 
-      if (direct_url.startsWith('http')) {
-          if (await urlExist(direct_url)) return direct_url
-          console.log(`❌ 404 on ${direct_url}`)
-      } else console.log(`❌ ${direct_url} not url`)
-  } catch (err){ 
-      console.log(`Some ERR on getting real URL from ${link}`) 
-  } 
-  return ''
+
+      if (direct_url.includes('.ru')) return '' // уберем русские сайты
+      if (direct_url.startsWith('http')) return direct_url
+        else console.log(`❌ ${direct_url} not url`)
+      return ''
+
+  } catch (err){ console.log(`Some ERR on getting real URL from ${link}`) } 
+  
 }
 
 // ======================================================================
 
 module.exports.getNewsText = async (source, url)=> { 
     if (url.trim()=='') return ['','']
-    await sleep(1000); console.log('\n📝 Fetching ' + url);
+    await sleep(1000); //console.log('\n📝 Fetching ' + url);
 
     try {
 
