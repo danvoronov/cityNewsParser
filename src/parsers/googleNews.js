@@ -1,4 +1,4 @@
-const {StopSrc, sCity, sExclude, hl, gl, timeframe} = require('../../filter_params');
+const {StopSrc, sCity, sExclude, hl, gl, timeframe, daysFrame} = require('../../filter_params');
 // ====================================================================
 // https://devcenter.heroku.com/articles/scheduler
 // https://www.npmjs.com/package/google-news-scraper
@@ -17,8 +17,8 @@ module.exports = async ()=>{
         })
     } catch (err){ console.error('Scraper ERR!', err); return []} 
 
-    const SREZ_DNEI = 5; // оставляем еще 5 дней тому
+    let flt = newsScr.filter(fl=>fl.time=='Вчера'||fl.time.includes('назад')).filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('Клубный Киев') && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.startsWith('Курс валют') && !fl.title.includes('ДНР') && !fl.title.includes('ЛРН') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет'))
 
-    return newsScr.filter(fl=>fl.time=='Вчера'||fl.time.includes('назад')).filter(fl=> !StopSrc.includes(fl.source) && !fl.title.startsWith('В Киеве тысячи людей') && !fl.title.startsWith('Курс валют') && !fl.title.includes(' може') && !fl.title.includes(' могу') && !fl.title.startsWith('Диван подождет')).filter(fl=>(fl.time.includes('дн')||fl.time.includes('день'))?(parseInt(fl.time)<=SREZ_DNEI):true)    
+    return flt.filter(fl=>(fl.time.includes('дн')||fl.time.includes('день'))?(parseInt(fl.time)<=daysFrame):true)    
     
 }

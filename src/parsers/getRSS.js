@@ -7,7 +7,7 @@ let TimeAgo = require('javascript-time-ago')
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/ru'))
 const timeAgo = new TimeAgo('ru-RU')
 
-const onlyKyiv = news => news.filter(({title})=>!title.includes('учшее за неделю')&&!excludeCities.some(city=>title.toLowerCase().includes(city)))
+const onlyKyiv = news => news.filter(({title})=>!title.includes('учшее за неделю')&&!excludeCities.some(city=>title.toLowerCase().includes(city))).filter(({link})=>link.startsWith('https://bzh.life/plany/')||link.startsWith('https://bzh.life/gorod/'))
 
 module.exports.getBZHrss = async t => {
   console.log('Getting RSS from bzh.life/feed')

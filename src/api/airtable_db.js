@@ -20,6 +20,21 @@ const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
 const MAX_OLD_NEWS = 500 
 const FL_POROG = .56 
 
+module.exports.isFromLastRun = async(hours)=> {
+     try{   
+        var getDate = new Date((await lastDate.read({ maxRecords: 1, 
+            fields: ['Created'], 
+            sort: [{field: 'Created', direction: 'desc'}]
+        }))[0])
+    } catch (err){ console.error('Airtable for lastrun ERR', err);  return false}
+
+    console.log('Time of last run:', getDate);
+
+    return (Math.abs(getDate-new Date())>1000*60*60*hours)
+}
+
+//=========================================================
+
 const natural = require('natural'); 
 module.exports.exclOldNews = async(news)=> {
     try{   
@@ -31,7 +46,7 @@ module.exports.exclOldNews = async(news)=> {
     
     // тут сравниваем нечетко с прошлыми заголовками    
     return news.filter(e=>{    
-        if(e.title[e.title.length-1]==')') e.title = e.title.split('(')[0]            
+        if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0]            
         for (var i = 0; i < oldNS.length; i++) if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
         return true  
     })
@@ -47,25 +62,17 @@ module.exports.getStems = async()=> {
     return [StemsWght, StemsID]
 }
 
-
 module.exports.saveNews = async(ns)=> {
-    delete ns.image
-    delete ns.subtitle
-    await cityData.create(ns)
+    let by10 = ns.map(news=>({"fields":news}));
+    try{  // API пишет только по 10 шт за раз
+        for (var s = 0; s < by10.length; s+=10)
+            await cityData.create( by10.slice(s,s+10) )
+    } catch (err){ console.error('Airtable saveNews ERR', err); }   
 }
 
-module.exports.isFromLastRun = async(hours)=> {
-     try{   
-        var getDate = new Date((await lastDate.read({ maxRecords: 1, 
-            fields: ['Created'], 
-            sort: [{field: 'Created', direction: 'desc'}]
-        }))[0])
-    } catch (err){ console.error('Airtable for lastrun ERR', err);  return false}
 
-    console.log('Time of last run:', getDate);
 
-    return (Math.abs(getDate-new Date())>1000*60*60*hours)
-}
+//=====================================================
 
 const tgChnl = new AirtablePlus({ baseID: process.env.AIRTABLE_BASE,
     apiKey: process.env.AIRTABLE_KEY, tableName: 'tgFilter'
