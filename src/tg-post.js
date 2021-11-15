@@ -1,5 +1,6 @@
 const {maxPost} = require('../filter_params');
 const {postNews, admNotify} = require('./api/telegram_api');
+// const {isFromLastRun} = require('./api/airtable_db');
 
 const {getTGugaga} = require('./kyivpasstrans');
 const {getData} = require('./main');
@@ -16,10 +17,10 @@ let natural = require('natural');
 // =========
 (async()=>{  
     
-    if (!process.env.DEBUG && !(await isFromLastRun(process.env.HOURS_BETWEEN))) {
-        await admNotify('↔️ Parser halt due to time restriction.')
-        return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);   
-    }
+    // if (!process.env.DEBUG && !(await isFromLastRun(process.env.HOURS_BETWEEN))) {
+    //     await admNotify('↔️ Parser halt due to time restriction.')
+    //     return console.log(`< ${process.env.HOURS_BETWEEN} hours!`);   
+    // }
 
     getTGugaga()   
 

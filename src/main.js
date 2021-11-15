@@ -10,7 +10,7 @@ let natural = require('natural');
 
 // ====================================================================
 const {admNotify} = require('./api/telegram_api');
-const {saveNews , isFromLastRun, exclOldNews, getStems} = require('./api/airtable_db');
+const {saveNews, exclOldNews, getStems} = require('./api/airtable_db');
 
 // ====================================================================
 // MAIN code
