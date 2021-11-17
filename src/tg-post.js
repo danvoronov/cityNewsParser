@@ -1,4 +1,4 @@
-const {maxPost} = require('../filter_params');
+const {maxPost} = require('./config/filter_params');
 const {postNews, admNotify} = require('./api/telegram_api');
 // const {isFromLastRun} = require('./api/airtable_db');
 

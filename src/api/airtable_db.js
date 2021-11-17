@@ -1,7 +1,7 @@
 const MAX_OLD_NEWS = 500 
 const FL_POROG = .56 
 
-const {sCity} = require('../../filter_params');
+const {sCity} = require('../config/filter_params');
 
 const AirtablePlus = require('airtable-plus');
 const airAuth = {baseID: process.env.AIRTABLE_BASE,

@@ -1,6 +1,6 @@
 const got = require('got'), cheerio = require('cheerio')
 const fs = require('fs');
-const ss = require('../../sitesSchemas');
+const ss = require('../config/sitesSchemas');
 
 const HTMLToText = require('./html2txt');
 
