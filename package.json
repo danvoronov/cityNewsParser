@@ -1,6 +1,6 @@
 {
     "name": "kyivnews-filter",
-    "version": "1.7.2",
+    "version": "1.7.4",
     "description": "Получает новости по городу, фильтрует чернуху",
     "scripts": {
         "start": "node heroku.js",
