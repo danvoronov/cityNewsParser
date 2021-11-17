@@ -7,18 +7,26 @@ let TimeAgo = require('javascript-time-ago')
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/ru'))
 const timeAgo = new TimeAgo('ru-RU')
 
-const onlyKyiv = news => news.filter(({title})=>!title.includes('учшее за неделю')&&!excludeCities.some(city=>title.toLowerCase().includes(city))).filter(({link})=>link.startsWith('https://bzh.life/plany/')||link.startsWith('https://bzh.life/gorod/'))
+// ========================================================================
+const BZHurl = 'https://bzh.life/feed';
+const onlyKyiv = ({title, link})=>!title.includes('учшее за неделю')
+            &&!excludeCities.some(city=>title.toLowerCase().includes(city))
+            &&(link.startsWith('https://bzh.life/plany/')||link.startsWith('https://bzh.life/gorod/'))
 
-module.exports.getBZHrss = async t => {
-  console.log('Getting RSS from bzh.life/feed')
+module.exports.getBZHrss = async t => { console.log('Getting RSS from bzh.life')
+
   try {       
-    let {items} = await parser.parseURL('https://bzh.life/feed');
-    // {item:{title,link,categories,isoDate}}
-    return onlyKyiv(items).map(({title,link,categories,isoDate}) => ({title,link,
-      "time":timeAgo.format(new Date(isoDate)),
-      "source":"БЖ"
-    }))
+
+    let {items} = await parser.parseURL(BZHurl);
+
+    return items.filter(onlyKyiv).map(({title,link,categories,isoDate}) => (
+      {title,link,
+        "time":timeAgo.format(new Date(isoDate)),
+        "source":"БЖ"
+      }))
+
   } catch (er) { console.error(`bzh.life RSS problem: ${er}`); return [] }
+
 };
 
 

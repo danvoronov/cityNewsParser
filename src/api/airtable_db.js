@@ -1,3 +1,6 @@
+const MAX_OLD_NEWS = 500 
+const FL_POROG = .56 
+
 const {sCity} = require('../../filter_params');
 
 const AirtablePlus = require('airtable-plus');
@@ -16,9 +19,7 @@ const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
     transform: ({id,fields})=>{StemsWght[fields.Stem]=fields.Weight; StemsID[fields.Stem]=id}
 });
 
-
-const MAX_OLD_NEWS = 500 
-const FL_POROG = .56 
+// ===========================================================================
 
 module.exports.isFromLastRun = async(hours)=> {
      try{   
@@ -34,6 +35,7 @@ module.exports.isFromLastRun = async(hours)=> {
 }
 
 //=========================================================
+const excludeStarts = ['Клубный Киев', 'В Киеве тысячи людей', 'Курс валют', 'Диван подождет']
 
 const natural = require('natural'); 
 module.exports.exclOldNews = async(news)=> {
@@ -43,11 +45,15 @@ module.exports.exclOldNews = async(news)=> {
             sort: [{field: 'Created', direction: 'desc'}]
         })
     } catch (err){ console.error('Airtable for old news ERR', err); return []}   
-    
-    // тут сравниваем нечетко с прошлыми заголовками    
+       
     return news.filter(e=>{    
         if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0]            
-        for (var i = 0; i < oldNS.length; i++) if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
+        if(e.title.endsWith('(ВИДЕО)')) e.title = e.title.split('(ВИДЕО)')[0]  
+
+        for (var i = 0; i < oldNS.length; i++) // тут сравниваем нечетко с прошлыми заголовками 
+            if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
+        if (!excludeStarts.some(st=>e.title.startsWith(st))) return false
+        
         return true  
     })
 }

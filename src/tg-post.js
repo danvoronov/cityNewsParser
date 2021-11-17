@@ -22,8 +22,8 @@ let natural = require('natural');
 
     getTGugaga()   
 
-    let pozitiv = (await getData()).filter(e=>e.score>0) // фильтруем только больше 0
-    console.log('[>0 score] = '+pozitiv.length)   
+    let pozitiv = (await getData()).filter(e=>e.score>=0) // фильтруем только больше 0
+    console.log('[>=0 score] = '+pozitiv.length)   
 
     // проритет близости к сейчс
     //filtred[i].fresh = (filtred[i].time.includes('минут')?3:(filtred[i].time.includes('час')?2:(filtred[i].time.includes('дней')?0:1)))    
