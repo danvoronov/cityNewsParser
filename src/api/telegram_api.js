@@ -1,6 +1,7 @@
 module.exports.postNews = async el => { 
-    if (el.score<=0 || el.title =='' || el.link =='') return  
-    if (await sendToBot(process.env.TELEGRAM_CHANEL_ID, `${el.indicator} | ${el.time} |  <a href="${el.link}">🌐 ПЕРЕЙТИ</a>`))
+    if (el.title =='' || el.link =='') return  
+    if (await sendToBot(process.env.TELEGRAM_CHANEL_ID, 
+        `${el.indicator} | ${el.time} |  <a href="${el.link}">🌐 ПЕРЕЙТИ</a>`))
         console.log(`✅ Send to TG "${el.title}"`)
 }
 
