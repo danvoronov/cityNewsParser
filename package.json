@@ -3,6 +3,7 @@
     "version": "1.7.4",
     "description": "Получает новости по городу, фильтрует чернуху",
     "scripts": {
+        "start": "node heroku.js",
         "check": "node src/tg-post.js",
         "locpost": "node -r dotenv/config src/tg-post.js",
         "loc": "node -r dotenv/config src/main.js"

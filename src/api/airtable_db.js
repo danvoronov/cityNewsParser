@@ -47,12 +47,12 @@ module.exports.exclOldNews = async(news)=> {
     } catch (err){ console.error('Airtable for old news ERR', err); return []}   
        
     return news.filter(e=>{    
-        if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0]            
-        if(e.title.endsWith('(ВИДЕО)')) e.title = e.title.split('(ВИДЕО)')[0]  
+        if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0].trim()            
+        if(e.title.endsWith('(ВИДЕО)')) e.title = e.title.split('(ВИДЕО)')[0].trim()  
 
         for (var i = 0; i < oldNS.length; i++) // тут сравниваем нечетко с прошлыми заголовками 
             if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
-        if (!excludeStarts.some(st=>e.title.startsWith(st))) return false
+        if (excludeStarts.some(st=>e.title.startsWith(st))) return false
         
         return true  
     })
