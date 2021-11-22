@@ -22,7 +22,7 @@ let natural = require('natural');
 
     getTGugaga()   
 
-    let pozitiv = (await getData()).filter(e=>e.score>=0).
+    let pozitiv = (await getData()).filter(e=>e.score>0).
     sort((a, b) => b.score-a.score || (b.TS?b.TS:0)-(a.TS?a.TS:0) )
 
     console.log('[>=0 score] = '+pozitiv.length)   
