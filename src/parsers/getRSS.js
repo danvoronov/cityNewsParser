@@ -1,7 +1,7 @@
 let Parser = require('rss-parser');
 let parser = new Parser();
 
-const {excludeCities} = require('../config/filter_params');
+const {kyiv_news_ru:{excludeCities}} = require('../config/filter_params_ru');
 
 let TimeAgo = require('javascript-time-ago')
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/ru'))
@@ -22,7 +22,8 @@ module.exports.getBZHrss = async t => { console.log('Getting RSS from bzh.life')
     return items.filter(onlyKyiv).map(({title,link,categories,isoDate}) => (
       {title,link,
         "time":timeAgo.format(new Date(isoDate)),
-        "source":"БЖ"
+        "source":"БЖ",
+        "lng": "ru"
       }))
 
   } catch (er) { console.error(`bzh.life RSS problem: ${er}`); return [] }

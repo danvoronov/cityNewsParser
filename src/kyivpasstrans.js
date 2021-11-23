@@ -2,7 +2,7 @@ const info_chanel = 'kyivpasstrans';
 const NS_POROG = 430
 
 const {parseChl} = require('./parsers/telegram_chnl');
-const simpleHTML = require('./parsers/html2txt');
+const simpleHTML = require('./processData/html2txt');
 const {sendWoLink} = require('./api/telegram_api');
 
 const countIn = (str, cnt) => (str.length - str.replace(new RegExp(cnt,"g"), "").length) / cnt.length

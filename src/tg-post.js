@@ -1,4 +1,4 @@
-const {maxPost} = require('./config/filter_params');
+const {maxPost} = require('./config/params');
 const {postNews, admNotify} = require('./api/telegram_api');
 // const {isFromLastRun} = require('./api/airtable_db');
 
@@ -23,7 +23,7 @@ let natural = require('natural');
     getTGugaga()   
 
     let pozitiv = (await getData()).filter(e=>e.score>0).
-    sort((a, b) => b.score-a.score || (b.TS?b.TS:0)-(a.TS?a.TS:0) )
+    sort((a, b) => b.score-a.score || (b.TS?b.TS:0)-(a.TS?a.TS:0) ) //  || b.fresh-a.fresh
 
     console.log('[>=0 score] = '+pozitiv.length)   
     await admNotify(`<b>🆗 ${pozitiv.length}</b>`)
@@ -32,7 +32,3 @@ let natural = require('natural');
 
 
 })()
-
-    // проритет близости к сейчс
-    //filtred[i].fresh = (filtred[i].time.includes('минут')?3:(filtred[i].time.includes('час')?2:(filtred[i].time.includes('дней')?0:1)))   
-            //  || b.fresh-a.fresh

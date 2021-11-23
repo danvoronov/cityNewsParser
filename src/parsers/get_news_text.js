@@ -2,12 +2,12 @@ const got = require('got'), cheerio = require('cheerio')
 const fs = require('fs');
 const ss = require('../config/sitesSchemas');
 
-const HTMLToText = require('./html2txt');
-
+const HTMLToText = require('../processData/html2txt');
 const sleep = require('atomic-sleep');
 // https://www.npmjs.com/package/article-parser
 const { extract } = require('article-parser');
 
+// =======================================================================
 
 module.exports.urlExist= async checkUrl => {
     const response = await got.head(checkUrl,{throwHttpErrors: false, retryCount:1})
@@ -30,6 +30,8 @@ module.exports.directURL = async (link)=> { if (link=='') return ''
   
 }
 
+// =======================================================================
+// пробуем для любого сайта получить текст и описание
 // ======================================================================
 
 module.exports.getNewsText = async (source, url)=> { 
@@ -39,11 +41,12 @@ module.exports.getNewsText = async (source, url)=> {
     try {
 
       let res = await extract(url, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246'}});
-      if (!res) { console.error('ERR on url:', url); return ['',''] }
+      if (!res) { console.error('🆘 ERR on url:', url.slice(0,100)); return ['',''] }
       // if (article) fs.writeFile('gettext/summary.txt', HTMLToText(content),(err)=>{if (err) console.log(err); console.log('saved!')}) // для дебага
+      
       var {content, description} = res
     
-    } catch (err) { console.error('extract FAIL',err); return ['',''] }
+    } catch (err) { console.error('🆘 ERR on TXTextract:',url.slice(0,100)); return ['',''] }
 
     let ans = HTMLToText(content)
     

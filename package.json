@@ -1,15 +1,18 @@
 {
     "name": "kyivnews-filter",
-    "version": "1.7.4",
+    "version": "2.0.0",
     "description": "Получает новости по городу, фильтрует чернуху",
     "scripts": {
         "start": "node heroku.js",
-        "check": "node src/tg-post.js",
+        "check": "node src/crawler.js",
+        "post": "node src/tg-post.js",
         "locpost": "node -r dotenv/config src/tg-post.js",
+        "loccr": "node -r dotenv/config src/crawler.js",
         "loc": "node -r dotenv/config src/main.js"
     },
     "author": "Dan Voronov",
     "dependencies": {
+        "airtable": "^0.11.1",
         "airtable-plus": "^1.0.4",
         "article-parser": "^4.2.10",
         "atomic-sleep": "^1.0.0",
@@ -17,10 +20,9 @@
         "google-news-scraper": "^1.0.7",
         "got": "^11.8.2",
         "javascript-time-ago": "^2.3.10",
-        "natural": "^5.1.1",
+        "natural": "^5.1.11",
         "node-nlp": "^4.22.1",
         "rss-parser": "^3.12.0",
-        "text-summarization": "^1.0.4",
         "textrank": "^1.0.5",
         "tinyld": "^1.1.3"
     }

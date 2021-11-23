@@ -1,13 +1,12 @@
 const MAX_OLD_NEWS = 500 
 const FL_POROG = .56 
 
-const {sCity} = require('../config/filter_params');
+const {DB_table} = require('../config/params');
+const cityTbl = DB_table+(process.env.DEBUG?' DEBUG':'')
 
 const AirtablePlus = require('airtable-plus');
 const airAuth = {baseID: process.env.AIRTABLE_BASE,
     apiKey: process.env.AIRTABLE_KEY}
-
-const cityTbl = sCity+(process.env.DEBUG?' DEBUG':'')
 
 const lastDate = new AirtablePlus({  ...airAuth, tableName: cityTbl,
     transform: ({fields})=>fields.Created // делаем из этого архив заголовков
@@ -15,9 +14,14 @@ const lastDate = new AirtablePlus({  ...airAuth, tableName: cityTbl,
 const cityData = new AirtablePlus({  ...airAuth, tableName: cityTbl,
     transform: ({fields})=>fields.title // делаем из этого архив заголовков
 });
-const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght',
-    transform: ({id,fields})=>{StemsWght[fields.Stem]=fields.Weight; StemsID[fields.Stem]=id}
+const stemsData = new AirtablePlus({  ...airAuth, tableName: 'StemsWght'});
+
+const Airtable = require('airtable');
+Airtable.configure({
+    endpointUrl: 'https://api.airtable.com',
+    apiKey: process.env.AIRTABLE_KEY
 });
+const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 // ===========================================================================
 
@@ -58,25 +62,32 @@ module.exports.exclOldNews = async(news)=> {
     })
 }
 
-let StemsWght = {}
-let StemsID = {}
 module.exports.getStems = async()=> {
-    StemsWght = {}
-    StemsID = {}
-    try{ await stemsData.read(); 
-    } catch (err){ console.error('Airtable for stems ERR', err); return []}  
-    return [StemsWght, StemsID]
+    let fields = ['ru','uk','W', 'tag']
+    try{         
+        stm = await stemsData.read({fields}); 
+        return stm.reduce((a,{id, fields:{ru, uk, W, tag}})=>{
+            if (ru) {
+                a['ru'][ru] = {W, id}
+                if (tag) a['ru'][ru]['tag'] = '#'+tag
+            }
+            if (uk) {
+                a['uk'][uk] = {W, id}
+                if (tag) a['uk'][uk]['tag'] = '#'+tag
+            }
+            return a
+        },{'ru':{},'uk':{}})
+
+    } catch (err){ console.error('Airtable for stems ERR', err);}  
 }
 
 module.exports.saveNews = async(ns)=> {
     let by10 = ns.map(news=>({"fields":news}));
     try{  // API пишет только по 10 шт за раз
         for (var s = 0; s < by10.length; s+=10)
-            await cityData.create( by10.slice(s,s+10) )
+            await base(cityTbl).create(  by10.slice(s,s+10) , {typecast: true});
     } catch (err){ console.error('Airtable saveNews ERR', err); }   
 }
-
-
 
 //=====================================================
 
