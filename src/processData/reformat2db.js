@@ -66,7 +66,7 @@ const elScoring = async (e) => {
         
         let sc = e.HS+(e.DS?e.DS*0.45:0)+(e.TS?e.TS*0.05:0)
 
-        e.stems = unique([].concat(H_lems, D_lems))
+        e.stems = unique([].concat(H_lems, D_lems).map(w=>w.match(/[a-zA-Zа-яА-ЯЁёЇїІіЄєҐґ'-]+/g)))
         e.stmlink=[]
         e.tags=[]
         if (StemsWghts && StemsWghts[e.lng])
@@ -74,7 +74,7 @@ const elScoring = async (e) => {
                     let s = StemsWghts[e.lng][wrd], add = 0;
                     if(s) {e.stmlink.push(s.id); e.tags.push(s.tag); add = s.W}
                     return acc+add
-                }, sc);
+                }, 0);
         if (sc<-16) { //del not to cluttering DB
             console.log(`❌ DEL negative (${sc|0}): "${e.title.slice(0,120)}"`)
             return null
