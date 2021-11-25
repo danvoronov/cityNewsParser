@@ -1,7 +1,6 @@
-const MAX_OLD_NEWS = 500 
-const FL_POROG = .56 
+const config = require('../config/filter');
+const {DB_table, MAX_OLD_NEWS, SAME_NEWS_POROG} = require('../config/params');
 
-const {DB_table} = require('../config/params');
 const cityTbl = DB_table+(process.env.DEBUG?' DEBUG':'')
 
 const AirtablePlus = require('airtable-plus');
@@ -39,7 +38,6 @@ module.exports.isFromLastRun = async(hours)=> {
 }
 
 //=========================================================
-const excludeStarts = ['Клубный Киев', 'В Киеве тысячи людей', 'Курс валют', 'Диван подождет']
 
 const natural = require('natural'); 
 module.exports.exclOldNews = async(news)=> {
@@ -48,15 +46,16 @@ module.exports.exclOldNews = async(news)=> {
             fields: ['title'], // filterByFormula: 'score>0',
             sort: [{field: 'Created', direction: 'desc'}]
         })
-    } catch (err){ console.error('Airtable for old news ERR', err); return []}   
+    } catch (err){ console.error('Airtable for old news ERR', err); return []}  
        
     return news.filter(e=>{    
-        if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0].trim()            
+        if(e.title.endsWith('(ФОТО)')) e.title = e.title.split('(ФОТО)')[0].trim()  
         if(e.title.endsWith('(ВИДЕО)')) e.title = e.title.split('(ВИДЕО)')[0].trim()  
 
         for (var i = 0; i < oldNS.length; i++) // тут сравниваем нечетко с прошлыми заголовками 
-            if(natural.DiceCoefficient(oldNS[i], e.title)>FL_POROG) return false
-        if (excludeStarts.some(st=>e.title.startsWith(st))) return false
+            if(natural.DiceCoefficient(oldNS[i], e.title)>SAME_NEWS_POROG) return false
+        
+        if (config[e.lng].excludeStarts.some(st=>e.title.startsWith(st))) return false
         
         return true  
     })

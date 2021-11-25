@@ -1,7 +1,7 @@
 let Parser = require('rss-parser');
 let parser = new Parser();
 
-const {kyiv_news_ru:{excludeCities}} = require('../config/filter_params_ru');
+const {ru:{excludeCities}} = require('../config/filter');
 
 let TimeAgo = require('javascript-time-ago')
 TimeAgo.addDefaultLocale(require('javascript-time-ago/locale/ru'))

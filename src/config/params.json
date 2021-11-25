@@ -1,4 +1,10 @@
 {
   "maxPost": 8,
-  "DB_table": "Kyiv"
+  "dbSntThreshold": -8,
+  "D_COEF": 0.45,
+  "T_COEF": 0.05,
+  "indBins": [3,7,13],
+  "DB_table": "Kyiv",
+  "MAX_OLD_NEWS": 500,
+  "SAME_NEWS_POROG": 0.56
 }

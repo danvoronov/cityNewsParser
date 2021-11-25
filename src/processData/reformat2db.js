@@ -1,26 +1,29 @@
 const {getNewsText, directURL, urlExist} = require('../parsers/get_news_text')
 const {getStems} = require('../api/airtable_db');
+
+const {dbSntThreshold, indBins, D_COEF, T_COEF} = require('../config/params');
+const {stopWords} = require('../config/sentiment/stopWords');
 // ====================================================================
-const { SentimentManager, NlpUtil } = require('node-nlp');
-const sentiment = new SentimentManager(); // ru uk
+const { SentimentManager, NlpUtil, Language } = require('node-nlp');
+const sentiment = new SentimentManager(), language = new Language();
 
 const { StemmerRu, StopwordsRu } = require('@nlpjs/lang-ru');
 const { StemmerUk, StopwordsUk } = require('@nlpjs/lang-uk');
-let stemmer = {
-    "ru": new StemmerRu(),
-    "uk": new StemmerUk()
-}
+let stemmer = { "ru": new StemmerRu(), "uk": new StemmerUk() }
+
 stemmer['ru'].stopwords = new StopwordsRu();
 stemmer['uk'].stopwords = new StopwordsUk();
+for (ln in stemmer) stemmer[ln].stopwords.dictionary =  // inject own stopwords
+    Object.fromEntries(stopWords.sg.concat(stopWords[ln]).map(w=>[w,true]))
 
-let {detect} = require('tinyld'); 
-
+// ====================================================================
 function unique(arr) { if (!arr) return []
     var hash = {}, result = [];
     for ( var i = 0, l = arr.length; i < l; ++i ) {
         if ( arr[i] && !hash.hasOwnProperty(arr[i]) && !parseInt(arr[i])>0  ) { 
-            hash[ arr[i] ] = true;
-            result.push(arr[i]);
+            let e = (arr[i]=='ки'||arr[i]=='киевск'||arr[i]=='київск')?'К':arr[i]
+            hash[ e ] = true;
+            result.push(e);
         }
     }
     return result;
@@ -40,17 +43,18 @@ const urlCheker = async (ns) => {
     }
 
 // ====================================================================
-const sl = [3,7,13] // score limits for indicator
 
-const tScoreAndStems = async (t,default_lng) => { 
-    let clean_t = unique(t.trim().replace(/<[^>]*>/ig, '')
-            .match(/[a-zA-Zа-яА-ЯЁёЇїІіЄєҐґ'-]+/g)).join(' ').trim()
-    if (!clean_t) return [null,null]              
+const tScoreAndStems = async (t,default_lng) => {  
+    let clean_t = t.replace(/<[^>]*>|"|“|”|«|»/ig, '').trim() // remove HTML tags and "
+    if (!clean_t) return [null,null]          
     try{
-        let lng = detect(clean_t)     
-        if (lng!='ru'||lng!='uk') lng=default_lng
-        return [(await sentiment.process(lng, clean_t)).score,
-                stemmer[lng].tokenizeAndStem(clean_t, false)]
+        let {score, alpha2} = language.guessBest(clean_t, ['ru', 'uk', 'en']),
+        lng = (score<0.7 || alpha2=='en')? default_lng : alpha2,
+
+        stems = stemmer[alpha2].tokenizeAndStem(clean_t, false); // <=w/o stopwords
+        //sent = stems.reduce((acc,wrd)=>acc+wrdTone[lng][wrd], 0)        
+
+        return [(await sentiment.process(lng, clean_t)).score, stems]
     } catch(err){ 
         console.log('ERR score and stems ON', clean_t, err)
         return [null,null]  
@@ -64,9 +68,9 @@ const elScoring = async (e) => {
         if (e.desc) [e.DS, D_lems] = await tScoreAndStems(e.desc, e.lng);
         if (e.text) [e.TS, T_lems] = await tScoreAndStems(e.text, e.lng);
         
-        let sc = e.HS+(e.DS?e.DS*0.45:0)+(e.TS?e.TS*0.05:0)
+        let sc = e.HS+(e.DS?e.DS*D_COEF:0)+(e.TS?e.TS*T_COEF:0)
 
-        e.stems = unique([].concat(H_lems, D_lems).map(w=>w.match(/[a-zA-Zа-яА-ЯЁёЇїІіЄєҐґ'-]+/g)))
+        e.stems = unique([].concat(H_lems, D_lems))
         e.stmlink=[]
         e.tags=[]
         if (StemsWghts && StemsWghts[e.lng])
@@ -75,7 +79,7 @@ const elScoring = async (e) => {
                     if(s) {e.stmlink.push(s.id); e.tags.push(s.tag); add = s.W}
                     return acc+add
                 }, 0);
-        if (sc<-16) { //del not to cluttering DB
+        if (sc<dbSntThreshold) { //del not to cluttering DB
             console.log(`❌ DEL negative (${sc|0}): "${e.title.slice(0,120)}"`)
             return null
         }  
@@ -83,7 +87,7 @@ const elScoring = async (e) => {
         e.score = sc.toFixed(1)
         e.stems = e.stems.join(', ')
         e.tags = unique(e.tags).join(' ')
-        e.indicator = (sc<=0?(sc==0?'⚪️':'🔴'):(sc<=sl[0]?'🟡':(sc<=sl[1]?'💛':(sc<=sl[2]?'🟢':'💚'))))
+        e.indicator = (sc<=0?(sc==0?'⚪️':'🔴'):(sc<=indBins[0]?'🟡':(sc<=indBins[1]?'💛':(sc<=indBins[2]?'🟢':'💚'))))
         e.fresh = (e.time.includes('минут')?3:(e.time.includes('час')?2:(e.time.includes('дней')?0:1)))  
         return e
     }
