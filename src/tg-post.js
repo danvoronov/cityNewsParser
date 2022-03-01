@@ -28,7 +28,7 @@ let natural = require('natural');
     console.log('[>=0 score] = '+pozitiv.length)   
     await admNotify(`<b>🆗 ${pozitiv.length}</b>`)
 
-    pozitiv.slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
+    //pozitiv.slice(0,maxPost).forEach(postNews) // певые maxPost шлем в паблик
 
 
 })()
