@@ -14,7 +14,7 @@
   },
   "author": "Dan Voronov",
   "dependencies": {
-    "airtable": "^0.11.1",
+    "airtable": "^0.12.1",
     "airtable-plus": "^1.0.4",
     "article-parser": "^4.2.10",
     "atomic-sleep": "^1.0.0",
